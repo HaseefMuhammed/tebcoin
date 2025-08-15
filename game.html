@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Catch the Ball - Full Screen</title>
+<style>
+  body { margin: 0; background: #222; overflow: hidden; touch-action: none; }
+  #controls { position: fixed; bottom: 20px; width: 100%; text-align: center; z-index: 10; }
+  .btn {
+    background: #0f0; color: #000; padding: 15px 25px;
+    margin: 5px; font-size: 20px; border: none; border-radius: 5px;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="controls">
+  <button class="btn" id="leftBtn">⬅️ Left</button>
+  <button class="btn" id="rightBtn">➡️ Right</button>
+</div>
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let moveLeft = false, moveRight = false;
+let score = 0;
+let highScore = localStorage.getItem("catchBallHighScore") || 0;
+
+// Game objects
+let paddle = { x: 0, y: 0, width: 0, height: 0, speed: 0 };
+let ball = { x: 0, y: 0, radius: 0, speed: 0 };
+
+// Resize function
+function resizeGame() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  paddle.width = canvas.width * 0.2;
+  paddle.height = 10;
+  paddle.x = (canvas.width - paddle.width) / 2;
+  paddle.y = canvas.height - 120; // moved up so it's above buttons
+  paddle.speed = canvas.width * 0.01 * 6;
+
+  ball.radius = 10;
+  ball.x = canvas.width / 2;
+  ball.y = 0;
+  ball.speed = 3;
+}
+window.addEventListener("resize", resizeGame);
+resizeGame();
+
+// Controls
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") moveLeft = true;
+  if (e.key === "ArrowRight") moveRight = true;
+});
+document.addEventListener("keyup", e => {
+  if (e.key === "ArrowLeft") moveLeft = false;
+  if (e.key === "ArrowRight") moveRight = false;
+});
+function setupButton(id, dir) {
+  document.getElementById(id).addEventListener("touchstart", () => dir(true));
+  document.getElementById(id).addEventListener("touchend", () => dir(false));
+  document.getElementById(id).addEventListener("mousedown", () => dir(true));
+  document.getElementById(id).addEventListener("mouseup", () => dir(false));
+}
+setupButton("leftBtn", state => moveLeft = state);
+setupButton("rightBtn", state => moveRight = state);
+
+function update() {
+  if (moveLeft) paddle.x -= paddle.speed;
+  if (moveRight) paddle.x += paddle.speed;
+
+  if (paddle.x < 0) paddle.x = 0;
+  if (paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
+
+  ball.y += ball.speed;
+
+  // Collision
+  if (
+    ball.y + ball.radius >= paddle.y &&
+    ball.x >= paddle.x &&
+    ball.x <= paddle.x + paddle.width
+  ) {
+    score++;
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem("catchBallHighScore", highScore);
+    }
+    ball.speed += 0.3;
+    resetBall();
+  }
+
+  // Miss
+  if (ball.y > canvas.height) {
+    score = 0;
+    ball.speed = 3;
+    resetBall();
+  }
+}
+
+function resetBall() {
+  ball.x = Math.random() * (canvas.width - ball.radius * 2) + ball.radius;
+  ball.y = 0;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Paddle
+  ctx.fillStyle = "#0f0";
+  ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
+  // Ball
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+  ctx.fillStyle = "#f00";
+  ctx.fill();
+
+  // Scores
+  ctx.fillStyle = "#fff";
+  ctx.font = "20px Arial";
+  ctx.fillText("Score: " + score, 10, 30);
+  ctx.fillText("High Score: " + highScore, canvas.width - 160, 30);
+}
+
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
