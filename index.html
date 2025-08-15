@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case Reporting</title>
+<link rel="stylesheet" href="bootstrap.css">
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+    body {
+        background: radial-gradient(circle at bottom left, #b40000, #000000);
+        color: white;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+    .login-box, .home-box, .case-box {
+        max-width: 400px;
+        margin: auto;
+        margin-top: 50px;
+        background: rgba(0,0,0,0.7);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        animation: fadeIn 0.6s ease-in-out;
+    }
+    .coin {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        display: flex;
+        align-items: center;
+        font-size: 18px;
+        background: rgba(0,0,0,0.6);
+        padding: 5px 10px;
+        border-radius: 20px;
+    }
+    .coin img {
+        width: 25px;
+        margin-right: 5px;
+    }
+    .btn-custom {
+        background: white;
+        color: black;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .btn-custom:hover {
+        background: gold;
+        color: black;
+    }
+    .hidden { display: none; }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    /* Loader */
+    #loader {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        display: none;
+    }
+</style>
+</head>
+<body>
+
+<!-- Loader -->
+<div id="loader">
+    <div class="spinner-border text-light" style="width: 4rem; height: 4rem;"></div>
+</div>
+
+<!-- Login -->
+<div id="loginScreen" class="login-box">
+    <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" width="80" class="mb-3">
+    <h2>Login</h2>
+    <div class="mb-3 text-start">
+        <label>User Name:</label>
+        <input type="text" id="username" class="form-control">
+    </div>
+    <div class="mb-3 text-start">
+        <label>Password:</label>
+        <input type="password" id="password" class="form-control">
+    </div>
+    <button id="loginBtn" class="btn btn-custom w-100">Login</button>
+</div>
+
+<!-- Home -->
+<div id="homeScreen" class="home-box hidden position-relative">
+    <div class="coin"><img src="https://cdn-icons-png.flaticon.com/512/138/138292.png"><span id="coinValue">0</span></div>
+    <h3 id="welcomeMsg">Welcome!</h3>
+    <small id="lastUpdated"></small>
+    <div class="mt-4">
+        <button id="reportBtn" class="btn btn-custom w-100 mb-3">Report Case</button>
+        <button id="rechargeBtn" class="btn btn-custom w-100 mb-3">Recharge</button>
+        <button id="logoutBtn" class="btn btn-danger w-100">Logout</button>
+    </div>
+</div>
+
+<!-- Report Case -->
+<div id="caseScreen" class="case-box hidden position-relative">
+    <div class="coin"><img src="https://cdn-icons-png.flaticon.com/512/138/138292.png"><span id="coinValueCase">0</span></div>
+    <button id="backBtn" class="btn btn-secondary mb-3">&larr; Back</button>
+    <h3>Report Case</h3>
+    <small id="lastUpdatedCase"></small>
+    <form id="caseForm" class="mt-3 text-start">
+        <label>Your User Name:</label>
+        <input type="text" id="caseUser" name="Username" class="form-control mb-2" readonly>
+
+        <label>Case ID:</label>
+        <input type="text" id="caseID" name="Case ID" class="form-control mb-2" readonly>
+
+        <label>Case Against:</label>
+        <select id="caseAgainst" class="form-control mb-2" name="Case Against" required>
+            <option value="">Select</option>
+            <option value="apk">apk</option>
+            <option value="hm">hm</option>
+            <option value="aa">aa</option>
+            <option value="na">na</option>
+        </select>
+
+        <label>Description:</label>
+        <textarea id="caseDesc" class="form-control mb-2" name="Description" required></textarea>
+
+        <div class="form-check mb-2">
+            <input type="checkbox" class="form-check-input" id="terms" name="TC" required>
+            <label for="terms" class="form-check-label"><a href="https://sites.google.com/view/teb-holdings/terms-and-conditions?authuser=0" target="_blank">Agree to terms and conditions</a></label>
+        </div>
+
+        <button type="submit" class="btn btn-custom w-100">Submit</button>
+    </form>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content text-dark">
+      <div class="modal-header"><h5 class="modal-title">Submitted successfully</h5></div>
+      <div class="modal-body" id="successMessage"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content text-dark">
+      <div class="modal-header"><h5 class="modal-title">Submission Failed</h5></div>
+      <div class="modal-body">Please check your input and try again.</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const users = {
+    "apk": { pass: "apk95a0", name: "Archith", col: 0 },
+    "hm": { pass: "hm94hc", name: "Haseef", col: 1 },
+    "aa": { pass: "aa81a8", name: "Agney", col: 2 },
+    "na": { pass: "na95n2", name: "Niranjan", col: 3 }
+};
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlRgqpE2OTjy78BzEXpanq489HdAR5KSFDqGe-D0roLilEda69pfZK2w-qLozxwx-s80GJiHS2ZqQC/pub?output=csv";
+const formSubmitURL = "https://script.google.com/macros/s/AKfycbwceh5bGRaHdktkEB4thC9pKk7T0DyEojk7zMZf7D7-CssBDvMDiQVzStl0mNcDWxilkQ/exec";
+
+$(document).ready(function(){
+    let savedUser = localStorage.getItem("loggedUser");
+    if(savedUser && users[savedUser]){
+        showHome(savedUser);
+    }
+
+    $("#loginBtn").click(function(){
+        let u = $("#username").val().trim();
+        let p = $("#password").val().trim();
+        if(users[u] && users[u].pass === p){
+            localStorage.setItem("loggedUser", u);
+            showHome(u);
+        } else {
+            alert("Invalid credentials");
+        }
+    });
+
+    $("#reportBtn").click(function(){
+        let u = localStorage.getItem("loggedUser");
+        $("#homeScreen").addClass("hidden");
+        $("#caseScreen").removeClass("hidden");
+        $("#caseUser").val(u);
+        $("#caseID").val(generateCaseID(u));
+    });
+
+    $("#backBtn").click(function(){
+        $("#caseScreen").addClass("hidden");
+        $("#homeScreen").removeClass("hidden");
+    });
+
+    $("#logoutBtn").click(function(){
+        localStorage.removeItem("loggedUser");
+        $("#homeScreen, #caseScreen").addClass("hidden");
+        $("#loginScreen").removeClass("hidden");
+    });
+
+    $("#rechargeBtn").click(function(){
+        window.location.href = "https://tebinnovations.in";
+    });
+
+    $("#caseForm").submit(function(e){
+        e.preventDefault();
+        if($("#caseAgainst").val() && $("#caseDesc").val() && $("#terms").is(":checked")){
+            $("#loader").show();
+            $.ajax({
+                url: formSubmitURL,
+                data: $("#caseForm").serialize(),
+                method: "post",
+                success: function () {
+                    $("#loader").hide();
+                    $("#successMessage").html(
+                        `Your case against <b>${$("#caseAgainst").val()}</b> has been filed successfully. 
+                        We will take action within 48 hours.<br>
+                        <b>Your case ID:</b> ${$("#caseID").val()}`
+                    );
+                    new bootstrap.Modal(document.getElementById("successModal")).show();
+                },
+                error: function () {
+                    $("#loader").hide();
+                    new bootstrap.Modal(document.getElementById("errorModal")).show();
+                }
+            });
+        } else {
+            new bootstrap.Modal(document.getElementById("errorModal")).show();
+        }
+    });
+});
+
+function showHome(username){
+    $("#loader").show();
+    $("#loginScreen, #caseScreen").addClass("hidden");
+    setTimeout(() => {
+        $("#loader").hide();
+        $("#homeScreen").removeClass("hidden");
+        $("#welcomeMsg").text("Welcome " + users[username].name + "!");
+        fetchCoins(username);
+    }, 1000);
+}
+
+function fetchCoins(username){
+    $.get(sheetURL, function(data){
+        let rows = data.split("\n");
+        let values = rows[1].split(",");
+        let coins = values[users[username].col];
+        let updated = values[4];
+        $("#coinValue, #coinValueCase").text(coins);
+        $("#lastUpdated, #lastUpdatedCase").text("Last updated on: " + updated);
+    });
+}
+
+function generateCaseID(username){
+    let now = new Date();
+    let dd = String(now.getDate()).padStart(2, '0');
+    let mm = String(now.getMonth()+1).padStart(2, '0');
+    let yyyy = now.getFullYear();
+    let hh = String(now.getHours()).padStart(2, '0');
+    let min = String(now.getMinutes()).padStart(2, '0');
+    return username + dd + mm + yyyy + hh + min;
+}
+</script>
+</body>
+</html>
