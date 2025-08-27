@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Value App</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
+    body{background:#f9f9fb;display:flex;flex-direction:column;min-height:100vh}
+    header,footer{text-align:center;padding:1rem;background:#1e1e2f;color:#fff}
+    main{flex:1;display:flex;flex-direction:column;align-items:center;padding:2rem;gap:2rem;width:100%}
+    .stats{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;width:100%;max-width:900px;margin-bottom:1rem}
+    .stat-card{background:#fff;padding:1.5rem 2rem;border-radius:15px;box-shadow:0 4px 15px rgba(0,0,0,0.08);flex:1;text-align:center;min-width:160px;font-size:1.1rem;font-weight:500}
+    .input-group{display:flex;flex-direction:column;gap:0.5rem;width:100%;max-width:400px}
+    input[type=text]{padding:0.8rem 1rem;border-radius:8px;border:1px solid #ccc;width:100%;font-size:1rem}
+    .stars{display:flex;gap:5px;cursor:pointer;font-size:1.6rem;color:#ccc;margin-top:5px}
+    .stars span:hover,.stars span.hover,.stars span.selected{color:#ffcc00}
+    button{padding:0.6rem 1.2rem;border-radius:8px;border:none;cursor:pointer;background:#1e90ff;color:#fff;transition:0.3s;font-size:0.95rem;margin:2px}
+    button:hover{background:#0b70e0}
+    #preview{margin-top:1rem;max-width:100%;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.15)}
+    .cards{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin-top:1rem;width:100%}
+    .card{background:#fff;border-radius:12px;padding:1rem;box-shadow:0 4px 12px rgba(0,0,0,0.1);width:220px;text-align:center;position:relative;transition:transform 0.2s}
+    .card:hover{transform:translateY(-5px)}
+    .card img{
+      width:120px;
+      height:120px;
+      border-radius:50%; /* ensures perfect circle */
+      object-fit:cover;
+      margin-bottom:0.5rem;
+      border:3px solid #eee;
+    }
+    .card .rating{font-size:1.2rem;color:#ffcc00;margin-bottom:0.3rem}
+    #video,#canvas{display:none}
+    @media(max-width:500px){.card{width:100%}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Value App</h1>
+    <p>Share your experience with us</p>
+  </header>
+  
+  <main>
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card" id="totalReviews">0<br>Total Reviews</div>
+      <div class="stat-card" id="avgRating">0<br>Average Rating</div>
+      <div class="stat-card" id="happyCustomers">0<br>Happy Customers</div>
+    </div>
+
+    <!-- Name -->
+    <div class="input-group">
+      <label for="name">Your Name</label>
+      <input type="text" id="name" placeholder="Enter your name...">
+    </div>
+
+    <!-- Rating -->
+    <div class="input-group">
+      <label>Rate Your Experience</label>
+      <div class="stars" id="stars">
+        <span data-value="1">&#9733;</span>
+        <span data-value="2">&#9733;</span>
+        <span data-value="3">&#9733;</span>
+        <span data-value="4">&#9733;</span>
+        <span data-value="5">&#9733;</span>
+      </div>
+    </div>
+
+    <!-- Photo -->
+    <div class="input-group">
+      <label>Take Your Photo</label>
+      <div style="border:2px dashed #ccc;border-radius:12px;padding:1rem;text-align:center;cursor:pointer" id="photoBox">
+        <p>Click to take photo</p>
+        <img id="preview" src="" alt="Preview" style="display:none;">
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin-top:1rem">
+      <button id="saveBtn" style="background:#28a745">Save Review</button>
+      <button id="showBtn" style="background:#6f42c1">Show Data</button>
+      <button id="exportPdfBtn" style="background:#fd7e14">Export PDF</button>
+      <button id="clearBtn" style="background:#dc3545">Clear Data</button>
+    </div>
+
+    <!-- Cards Display -->
+    <div class="cards" id="cards"></div>
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
+  </main>
+
+  <footer>
+    &copy; 2025 All rights reserved • admin.tebinnovations.in
+  </footer>
+
+  <script>
+    let selectedRating=0;
+    const stars=document.querySelectorAll("#stars span");
+    stars.forEach(star=>{
+      star.addEventListener("mouseover",()=>{
+        stars.forEach(s=>s.classList.remove("hover"));
+        for(let i=0;i<star.dataset.value;i++) stars[i].classList.add("hover");
+      });
+      star.addEventListener("mouseout",()=>{
+        stars.forEach(s=>s.classList.remove("hover"));
+        for(let i=0;i<selectedRating;i++) stars[i].classList.add("selected");
+      });
+      star.addEventListener("click",()=>{
+        selectedRating=star.dataset.value;
+        stars.forEach(s=>s.classList.remove("selected"));
+        for(let i=0;i<selectedRating;i++) stars[i].classList.add("selected");
+      });
+    });
+
+    const video=document.getElementById("video");
+    const canvas=document.getElementById("canvas");
+    const preview=document.getElementById("preview");
+    const photoBox=document.getElementById("photoBox");
+
+    // Photo capture
+    photoBox.addEventListener("click",async()=>{
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
+        return alert("Camera not supported");
+      video.style.display="block";
+      const stream=await navigator.mediaDevices.getUserMedia({video:true});
+      video.srcObject=stream;
+      setTimeout(()=>{
+        canvas.width=video.videoWidth;
+        canvas.height=video.videoHeight;
+        canvas.getContext("2d").drawImage(video,0,0);
+        preview.src=canvas.toDataURL("image/png");
+        preview.style.display="block";
+        video.srcObject.getTracks().forEach(track=>track.stop());
+        video.style.display="none";
+      },2000);
+    });
+
+    function updateStats(){
+      const users=JSON.parse(localStorage.getItem("users")||"[]");
+      document.getElementById("totalReviews").innerHTML=users.length+"<br>Total Reviews";
+      const avg=users.length? (users.reduce((a,b)=>a+parseInt(b.rating),0)/users.length).toFixed(1) :0;
+      document.getElementById("avgRating").innerHTML=avg+"<br>Average Rating";
+      const happy=users.filter(u=>u.rating>=4).length;
+      document.getElementById("happyCustomers").innerHTML=happy+"<br>Happy Customers";
+    }
+
+    // Save
+    document.getElementById("saveBtn").addEventListener("click",()=>{
+      const name=document.getElementById("name").value.trim();
+      if(!name) return alert("Enter your name");
+      if(!preview.src) return alert("Capture your photo first");
+      const users=JSON.parse(localStorage.getItem("users")||"[]");
+      users.push({name,rating:selectedRating,photo:preview.src,time:new Date().toLocaleString()});
+      localStorage.setItem("users",JSON.stringify(users));
+      alert("Review saved!");
+      document.getElementById("name").value="";
+      preview.src="";
+      preview.style.display="none";
+      selectedRating=0;stars.forEach(s=>s.classList.remove("selected"));
+      updateStats();
+    });
+
+    const cards=document.getElementById("cards");
+
+    // Show
+    document.getElementById("showBtn").addEventListener("click",()=>{
+      cards.innerHTML="";
+      const users=JSON.parse(localStorage.getItem("users")||"[]");
+      users.forEach(u=>{
+        const card=document.createElement("div");
+        card.className="card";
+        card.innerHTML=`
+          <img src="${u.photo}" alt="${u.name}">
+          <h3>${u.name}</h3>
+          <div class="rating">${'★'.repeat(u.rating)+'☆'.repeat(5-u.rating)}</div>
+          <small>${u.time}</small>
+        `;
+        cards.appendChild(card);
+      });
+      updateStats();
+    });
+
+    // Clear
+    document.getElementById("clearBtn").addEventListener("click",()=>{
+      if(confirm("Clear all data?")){
+        localStorage.removeItem("users");
+        cards.innerHTML="";
+        updateStats();
+      }
+    });
+
+    // PDF Export
+    document.getElementById("exportPdfBtn").addEventListener("click",()=>{
+      const users=JSON.parse(localStorage.getItem("users")||"[]");
+      if(!users.length) return alert("No data to export!");
+      // Watermark CSS
+      const watermarkCSS = `
+        .watermark {
+          position: fixed;
+          top: 0; left: 0; width: 100vw; height: 100vh;
+          pointer-events: none; z-index: 0;
+        }
+        .watermark-text {
+          position: absolute;
+          color: #bfc9e0;
+          opacity: 0.18;
+          font-size: 3.2em;
+          font-weight: bold;
+          transform: rotate(-25deg);
+          white-space: nowrap;
+          user-select: none;
+        }
+      `;
+      // Watermark grid
+      let watermarkDiv = '<div class="watermark">';
+      for(let y=0; y<1000; y+=180) {
+        for(let x=0; x<1200; x+=400) {
+          watermarkDiv += `<div class="watermark-text" style="top:${y}px;left:${x}px;">TEB ADMINS</div>`;
+        }
+      }
+      watermarkDiv += '</div>';
+
+      // Stats summary
+      let statsHtml = `
+        <div style='display:flex;gap:1.5rem;justify-content:center;margin-bottom:18px;'>
+          <div style='background:#f0f4ff;padding:1.1rem 1.7rem;border-radius:12px;font-size:1.1em;'><b>${users.length}</b><br>Total Reviews</div>
+          <div style='background:#f0f4ff;padding:1.1rem 1.7rem;border-radius:12px;font-size:1.1em;'><b>${users.length? (users.reduce((a,b)=>a+parseInt(b.rating),0)/users.length).toFixed(1):0}</b><br>Average Rating</div>
+          <div style='background:#f0f4ff;padding:1.1rem 1.7rem;border-radius:12px;font-size:1.1em;'><b>${users.filter(u=>u.rating>=4).length}</b><br>Happy Customers</div>
+        </div>`;
+
+      // Main content
+      let content = `<div style='max-width:900px;margin:auto;font-family:sans-serif;position:relative;z-index:1;'>`+
+        `<h2 style='text-align:center;color:#23234a;margin-bottom:8px;'>Reviews Report</h2>`+
+        `<p style='text-align:center;color:#888;margin-bottom:18px;font-size:1.1em;'>admin.tebinnovations.in</p>`+
+        statsHtml+
+        `<hr style='margin:18px 0 24px 0;border:0;border-top:2px solid #e3e6f3;'>`+
+        `<div style='display:flex;flex-wrap:wrap;gap:18px;justify-content:center;'>`;
+      users.forEach(u=>{
+        content+=
+          `<div style="background:#fff;border:1.5px solid #e3e6f3;padding:16px 12px;border-radius:13px;width:240px;text-align:center;box-shadow:0 2px 10px #e3e6f355;">`+
+            `<img src="${u.photo}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:2px solid #ccc;box-shadow:0 2px 8px #bfc9e055;">`+
+            `<h3 style="margin:7px 0 3px 0;font-size:1.15em;color:#23234a;">${u.name}</h3>`+
+            `<div style="color:#ffcc00;font-size:20px;margin-bottom:2px;">${'★'.repeat(u.rating)+'☆'.repeat(5-u.rating)}</div>`+
+            `<small style="color:#666;font-size:0.98em">${u.time}</small>`+
+          `</div>`;
+      });
+      content += `</div></div>`;
+      const newWin=window.open("");
+      newWin.document.write(`<!DOCTYPE html><html><head><title>Reviews PDF</title><style>${watermarkCSS}</style></head><body style="background:#f9f9fb;position:relative;">${watermarkDiv}<div style="position:relative;z-index:1;">${content}</div></body></html>`);
+      newWin.document.close();
+      newWin.print();
+    });
+
+    // Init
+    updateStats();
+  </script>
+</body>
+</html>
